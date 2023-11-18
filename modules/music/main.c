@@ -35,7 +35,7 @@ static void nosound( ) {
 	outb(0x61, tmp);
 }
 
-module_info_t init(env_t *env) {
+module_info_t __attribute__((section(".minit"))) init(env_t *env) {
 	init_env(env);
 	fb_printf("Программа инициализирована!\n");
 	return (module_info_t){
@@ -44,7 +44,6 @@ module_info_t init(env_t *env) {
 		.type = 0,
 		.data_size = 0,
 		.data = (void *)0,
-		.data_size = 0,
 		.err_code = 0,
 		.module_id = 0,
 	};

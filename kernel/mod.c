@@ -33,7 +33,8 @@ uint64_t bootpng_size;
 static void *elf_entry(elf64_header_t *module_bin) {
 	// Приводим заголовок ELF файла к типу elf64_header_t
 	elf64_header_t *elf_header = (elf64_header_t *)module_bin;
-
+	LOG("(uint64_t)elf_header->e_entry = 0x%x\n",
+	    (uint64_t)elf_header->e_entry);
 	// Возвращаем указатель на точку входа
 	return (void *)((uint64_t)elf_header->e_entry + (uint64_t)module_bin);
 }
@@ -51,7 +52,7 @@ void mod_list_show( ) {
 
 module_info_t *mod_find(char *tag) {
 	for (uint64_t i = 0; i < modules_count; i++) {
-		if (!tool_starts_with(module_list[i].name, tag)) {
+		if (tool_starts_with(module_list[i].name, tag)) {
 			return &module_list[i];
 		}
 	}
@@ -101,15 +102,13 @@ void mod_init( ) {
 		LOG("\t->Точка входа: 0x%x\n", module_init);
 
 		main_env.offset = (uint64_t)module_ptr->address;
-		main_env.info = (module_info_t *)0;
 
-		sys_install(main_env);
-
-		main_env.fb_printf = &fb_printf;
+		sys_install(&main_env);
 
 		module_info_t ret = module_init(&main_env);
 
 		LOG("\t->%s\n", ret.message);
+		module_list[modules_count].name = ret.name;
 		module_list[modules_count].message = ret.message;
 		module_list[modules_count].data_size = ret.data_size;
 

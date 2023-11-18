@@ -5,6 +5,8 @@ typedef struct {
 	uint16_t id;
 } vendor_t;
 
+static vendor_t **vendor_list;
+
 static inline uint32_t inl(uint16_t port) {
 	uint32_t data;
 	asm volatile("inl %1, %0" : "=a"(data) : "Nd"(port));
@@ -74,8 +76,18 @@ static inline void scan( ) {
 	}
 }
 
-module_info_t init(env_t *env) {
+module_info_t __attribute__((section(".minit"))) init(env_t *env) {
 	init_env(env);
+
+	module_info_t *pci_data = get_module("[PCI][DATA]");
+
+	if (pci_data == NULL) {
+		fb_printf("Модуль PCI данных не найден!\n");
+	} else {
+		fb_printf("Записей в базе PCI: %u\n", pci_data->data_size);
+		vendor_list = (vendor_t **)pci_data->data;
+	}
+
 	scan( );
 	return (module_info_t){
 		.name = (char *)"[PCI]",
@@ -83,7 +95,6 @@ module_info_t init(env_t *env) {
 		.type = 0,
 		.data_size = 0,
 		.data = (void *)0,
-		.data_size = 0,
 		.err_code = 0,
 		.module_id = 0,
 	};
