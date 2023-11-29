@@ -1,23 +1,29 @@
 /**
- * sys.h
- * Заголовок содержащий определения для работы системного API
+ * types.h
+ * Системные вызовы
  *
- * Данный заголовочный файл содержит определения которые используются для
- * объявления структур и системных функций
+ * Заголовочный файл содержащий заготовку для работы с системными вызовами
  *
  */
 
-#ifndef SYS_H
-#define SYS_H
+#ifndef TYPES_H
+#define TYPES_H
 
-#include <stdint.h>
+#define NULL ((void *)0)
+
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+
+typedef char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef long long int64_t;
+
+typedef uint64_t size_t;
 
 typedef struct {
-	uint32_t *address;
-	uint64_t width;
-	uint64_t height;
-	uint64_t pitch;
-	uint16_t bpp;
 	int reserved;
 } framebuffer_t;
 
@@ -74,6 +80,4 @@ typedef struct {
 	time_t (*get_time)( );
 } __attribute__((packed)) env_t;
 
-env_t *sys_install(env_t *module);
-
-#endif // sys.h
+#endif // types.h
