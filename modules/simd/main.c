@@ -2,11 +2,8 @@
 
 static char fxsave_region[512] __attribute__((aligned(16)));
 
-static inline void cpuid(uint32_t leaf, uint32_t *eax, uint32_t *ebx,
-                         uint32_t *ecx, uint32_t *edx) {
-	asm volatile("cpuid"
-	             : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
-	             : "a"(leaf));
+static inline void cpuid(uint32_t leaf, uint32_t *eax, uint32_t *ebx, uint32_t *ecx, uint32_t *edx) {
+	asm volatile("cpuid" : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx) : "a"(leaf));
 }
 
 module_info_t __attribute__((section(".minit"))) init(env_t *env) {
@@ -14,6 +11,11 @@ module_info_t __attribute__((section(".minit"))) init(env_t *env) {
 
 	uint32_t eax, ebx, ecx, edx;
 	cpuid(1, &eax, &ebx, &ecx, &edx);
+
+	if ((edx >> 0) & 1) {
+		asm volatile("finit");
+		fb_printf("FPU(x87) поддерживается!\n");
+	}
 
 	if ((edx >> 23) & 1) { fb_printf("MMX поддерживается!\n"); }
 

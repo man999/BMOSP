@@ -25,41 +25,35 @@ static inline void outl(uint16_t port, uint32_t data) {
 	asm volatile("outl %0, %1" : : "a"(data), "Nd"(port));
 }
 
-static inline uint16_t pci_read_word(uint16_t bus, uint16_t slot, uint16_t func,
-                                     uint16_t offset) {
+static inline uint16_t pci_read_word(uint16_t bus, uint16_t slot, uint16_t func, uint16_t offset) {
 	uint64_t address;
 	uint64_t lbus = (uint64_t)bus;
 	uint64_t lslot = (uint64_t)slot;
 	uint64_t lfunc = (uint64_t)func;
 	uint16_t tmp = 0;
-	address = (uint64_t)((lbus << 16) | (lslot << 11) | (lfunc << 8) |
-	                     (offset & 0xFC) | ((uint32_t)0x80000000));
+	address = (uint64_t)((lbus << 16) | (lslot << 11) | (lfunc << 8) | (offset & 0xFC) | ((uint32_t)0x80000000));
 	outl(0xCF8, address);
 	tmp = (uint16_t)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xFFFF);
 	return (tmp);
 }
 
-static inline uint16_t get_vendor_id(uint16_t bus, uint16_t device,
-                                     uint16_t function) {
-	uint32_t r0 = pci_read_word(bus, device, function, 0);
+static inline uint16_t get_vendor_id(uint16_t bus, uint16_t slot, uint16_t function) {
+	uint32_t r0 = pci_read_word(bus, slot, function, 0);
 	return r0;
 }
 
-static inline uint16_t get_device_id(uint16_t bus, uint16_t device,
-                                     uint16_t function) {
-	uint32_t r0 = pci_read_word(bus, device, function, 2);
+static inline uint16_t get_device_id(uint16_t bus, uint16_t slot, uint16_t function) {
+	uint32_t r0 = pci_read_word(bus, slot, function, 2);
 	return r0;
 }
 
-static inline uint16_t get_class_id(uint16_t bus, uint16_t device,
-                                    uint16_t function) {
-	uint32_t r0 = pci_read_word(bus, device, function, 0xA);
+static inline uint16_t get_class_id(uint16_t bus, uint16_t slot, uint16_t function) {
+	uint32_t r0 = pci_read_word(bus, slot, function, 0xA);
 	return (r0 & ~0x00FF) >> 8;
 }
 
-static inline uint16_t get_sub_class_id(uint16_t bus, uint16_t device,
-                                        uint16_t function) {
-	uint32_t r0 = pci_read_word(bus, device, function, 0xA);
+static inline uint16_t get_sub_class_id(uint16_t bus, uint16_t slot, uint16_t function) {
+	uint32_t r0 = pci_read_word(bus, slot, function, 0xA);
 	return (r0 & ~0xFF00);
 }
 
@@ -98,13 +92,26 @@ static inline void scan( ) {
 
 				uint16_t device_id = get_device_id(bus, slot, function);
 				uint16_t class_id = get_class_id(bus, slot, function);
+				uint16_t status = pci_read_word(bus, slot, function, 0x6);
+				uint32_t mem_addr_0 = pci_read_word(bus, slot, function, 0x1C);
+				uint32_t mem_addr_1 = pci_read_word(bus, slot, function, 0x24);
+				uint32_t mem_lim_0 = pci_read_word(bus, slot, function, 0x20);
+				uint32_t mem_lim_1 = pci_read_word(bus, slot, function, 0x28);
+				uint32_t io_addr_0 = pci_read_word(bus, slot, function, 0x2C);
+				uint32_t io_addr_1 = pci_read_word(bus, slot, function, 0x34);
+				uint32_t io_lim_0 = pci_read_word(bus, slot, function, 0x30);
+				uint32_t io_lim_1 = pci_read_word(bus, slot, function, 0x38);
 
 				char *name = find_vendor(vendor);
 				fb_printf("[%u] %x [%s], устройство: %x, класс: %u, "
 				          "%u.%u.%u\n",
-				          devices, vendor, name, device_id, class_id, bus, slot,
-				          function);
-				fb_printf("\t\\->%s\n", get_class_name(class_id));
+				          devices, vendor, name, device_id, class_id, bus, slot, function);
+				fb_printf("\t\\->%s", get_class_name(class_id));
+				fb_printf(" | 0x%x : 0x%x", mem_addr_0, mem_lim_0);
+				fb_printf(" | 0x%x : 0x%x", mem_addr_1, mem_lim_1);
+				fb_printf(" | 0x%x : 0x%x", io_addr_0, io_lim_0);
+				fb_printf(" | 0x%x : 0x%x", io_addr_1, io_lim_1);
+				fb_printf(" | 0x%x\n", status);
 
 				devices++;
 			}

@@ -34,15 +34,15 @@ enum colors {
 #define SCREEN_BUFFER fb_addr
 
 #ifndef NO_DEBUG
-#define LOG(...)                                                               \
-	fb_printf("[%u]%s() (%s:%d) ", GET_TICK_BIG, __func__, __FILE__,           \
-	          __LINE__);                                                       \
+#define LOG(...)                                                                                                       \
+	fb_printf("[%u]%s() (%s:%d) ", GET_TICK_BIG, __func__, __FILE__, __LINE__);                                        \
 	fb_printf(__VA_ARGS__)
 #else
 #define LOG(...)
 #endif
 
 void fb_set_text_color(uint32_t color);
+uint32_t fb_get_text_color( );
 void fb_init( );
 void fb_print_buf(size_t x, size_t y, size_t h, size_t w, uint32_t *buf);
 void fb_printf(char *str, ...);
