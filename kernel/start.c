@@ -40,27 +40,5 @@ void _start( ) {
 
 	asm volatile("sti");
 
-	while (1) {
-		uint64_t byte = inb(0x60);
-		switch (byte) {
-			case 0x1:
-				LOG("Выход для Bochs\n");
-				outw(0xB004, 0x2000);
-
-				LOG("Выход для Qemu\n");
-				outw(0x604, 0x2000);
-
-				LOG("Выход для Virtualbox\n");
-				outw(0x4004, 0x3400);
-
-				LOG("Выход для облачного гипервизора\n");
-				outw(0x600, 0x34);
-				break;
-			case 0x4F:
-				LOG("Вызов прерывания переключения задач!\n");
-				asm volatile("int $32");
-				break;
-			default: break;
-		}
-	}
+	for (;;) { asm volatile("hlt"); }
 }
