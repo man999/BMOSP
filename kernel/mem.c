@@ -9,6 +9,7 @@
 #include <fb.h>
 #include <limine.h>
 #include <lock.h>
+#include <log.h>
 #include <mem.h>
 #include <stdbool.h>
 #include <tool.h>
@@ -59,11 +60,11 @@ void mem_dump_memory( ) {
 
 	while (curr) {
 		if (curr->next) {
-			fb_printf("->0x%x | %u килобайт | %s | 0x%x\n", &curr->data, (curr->size) / 1024,
-			          curr->free ? memory_types[0] : memory_types[1], curr->next);
+			LOG("->0x%x | %u килобайт | %s | 0x%x\n", &curr->data, (curr->size) / 1024,
+			    curr->free ? memory_types[0] : memory_types[1], curr->next);
 		} else {
-			fb_printf("->0x%x | %u килобайт | %s | Это последний блок\n", &curr->data, (curr->size) / 1024,
-			          curr->free ? memory_types[0] : memory_types[1]);
+			LOG("->0x%x | %u килобайт | %s | Это последний блок\n", &curr->data, (curr->size) / 1024,
+			    curr->free ? memory_types[0] : memory_types[1]);
 		}
 		curr = curr->next;
 	}
@@ -249,14 +250,14 @@ void mem_init( ) {
 	mmmap_count = memmap_response->entry_count;
 	struct limine_memmap_entry **mmaps = memmap_response->entries;
 
-	LOG("Записей в карте памяти: %u\n", memmap_response->entry_count);
+	// LOG("Записей в карте памяти: %u\n", memmap_response->entry_count);
 
 	// Обработка каждой записи в карте памяти
 	for (uint64_t i = 0; i < mmmap_count; i++) {
 		available += mmaps[i]->length;
 
-		// LOG("\t%d: 0x%x\tдлина: 0x%x\tтип: %s\n", i + 1,
-		// mmaps[i]->base, mmaps[i]->length, memory_types[mmaps[i]->type]);
+		// LOG("\t%d: 0x%x\tдлина: 0x%x\tтип: %s\n", i + 1, mmaps[i]->base, mmaps[i]->length,
+		//     memory_types[mmaps[i]->type]);
 		if (mmaps[i]->type == LIMINE_MEMMAP_FRAMEBUFFER) {
 			LOG("На видеопамять BIOS/UEFI выделено: %u мегабайт + %u "
 			    "килобайт\n",
@@ -301,12 +302,9 @@ void mem_init( ) {
 	LOG("%u мегабайт выделено в динамичную память\n", (256 * 16 * BLOCK_SIZE + BLOCK_SIZE) / 1024 / 1024);
 
 	// Выделяем по 4 мегабайта в аллокатор динамичной памяти
-	for (int64_t i = 0; i < 16; i += 4) {
-		// fb_printf("%d/%u\n", i, 16);
-		mem_add_block(mem_frame_alloc(1024), 1024 * BLOCK_SIZE);
-	}
+	for (int64_t i = 0; i < 16; i += 8) { mem_add_block(mem_frame_alloc(1024), 1024 * BLOCK_SIZE); }
 	mem_merge_all_blocks( );
-	mem_dump_memory( );
+	// mem_dump_memory( );
 	LOG("%u МБ объем доступной памяти, %u МБ объем виртуальной памяти\n", (bitmap_available * BLOCK_SIZE) / 1024 / 1024,
 	    available / 1024 / 1024);
 
