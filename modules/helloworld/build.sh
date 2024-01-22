@@ -11,7 +11,7 @@ fi
 
 
 $CC $ARCH_FLAGS -I../../modlib -finput-charset=UTF-8 -fexec-charset=cp1251 -c main.c -o hello.o
-$CC $ARCH_FLAGS -T ../link.ld -Wl,--entry=init,--build-id=none hello.o -o hello.ko
+$CC $ARCH_FLAGS -Wl,--entry=init,--build-id=none -T ../link.ld hello.o -L../../modlib/lib/ -lmod -o hello.ko
 
 cp hello.ko ../bin/
 echo "Сборка завершена, файл: hello.ko"

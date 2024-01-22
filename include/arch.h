@@ -10,20 +10,23 @@
 #ifndef ARCH_H
 #define ARCH_H
 
+#include <lock.h>
 #include <stdint.h>
 
-#define STACK_SIZE 8192 // 1MB
+#define STACK_SIZE 8192 // 8 килобайт на стек
 
 typedef struct task {
-	uint64_t id;         // Идентификатор задачи
-	uint64_t priority;   // Приоритет задачи
-	void *entry_point;   // Точка входа в задачу
-	uint64_t status;     // Состояние задачи
-	void *stack;         // Указатель на стек
-	void *rsp;           // Указатель на RSP
-	uint64_t stack_size; // Размер стека задачи
-	struct task *next;   // Следующий поток
-	struct task *last;   // Предыдущий поток
+	uint64_t rax, rbx, rcx, rdx;
+	uint64_t rsi, rdi, rsp, rbp;
+	uint64_t cr3;
+
+	uint64_t cpu_time;
+	uint64_t cpu_time_expired;
+	uint64_t id;
+	void *stack;
+
+	struct task *last;
+	struct task *next;
 } __attribute__((packed)) task_t;
 
 struct frame {
@@ -53,9 +56,12 @@ struct frame {
 
 typedef void (*int_entry_t)(struct frame *state);
 
+extern lock_t task_lock;
+
 void arch_init( );
 void task_init( );
 void task_switch(struct frame *state);
+uint64_t task_new_thread(void (*func)(void *));
 void cpu_init( );
 void gdt_init( );
 void pic_init( );
