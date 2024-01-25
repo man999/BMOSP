@@ -17,12 +17,12 @@ static task_t *kernel_task = NULL;
 task_t *current_task = NULL;
 uint32_t *test_buf = NULL;
 extern uint64_t full_init;
+uint64_t task_f_init = 0;
 lock_t task_lock;
 
 void task_switch_asm(task_t *, task_t *);
 
-void task_switch(struct frame *state) {
-	UNUSED(state);
+void task_switch( ) {
 	asm volatile("cli");
 
 	task_t *next = current_task->next;
@@ -65,6 +65,7 @@ uint64_t task_new_thread(void (*func)(void *)) {
 
 	new_task->rsp = (uint64_t)new_task->stack + sizeof(uint64_t) * stack_top;
 	new_task->cpu_time = 500;
+	new_task->cpu_time_expired = new_task->cpu_time;
 	new_task->id = next_thread_id++;
 	new_task->cr3 = cr3;
 
@@ -80,7 +81,7 @@ uint64_t task_new_thread(void (*func)(void *)) {
 
 void dummy( ) {
 	LOG("\t\tПривет! Я поток: %u\n", current_task->id);
-	for (;;) { asm volatile("hlt"); }
+	for (;;) { task_switch( ); }
 }
 
 void task_init( ) {
@@ -90,16 +91,23 @@ void task_init( ) {
 	uint64_t rsp;
 	uint64_t cr3;
 
+	LOG("Создание потока ядра\n");
 	asm volatile("mov %%rsp, %0" : "=r"(rsp));
 	asm volatile("mov %%cr3, %0" : "=r"(cr3));
 
-	kernel_task = mem_alloc(sizeof(task_t));
+	LOG("Настройка потока ядра\n");
+	mem_dump_memory( );
+	task_t *new_task = mem_alloc(sizeof(task_t));
+	LOG("%x\n", new_task);
+	kernel_task = new_task;
+
 	tool_memset(kernel_task, 0, sizeof(task_t));
 
 	kernel_task->id = next_thread_id++;
 	kernel_task->rsp = rsp;
 	kernel_task->cr3 = cr3;
-	kernel_task->cpu_time = 1000;
+	kernel_task->cpu_time = 100;
+	kernel_task->cpu_time_expired = kernel_task->cpu_time;
 
 	current_task = kernel_task;
 
@@ -108,7 +116,7 @@ void task_init( ) {
 
 	last_task = kernel_task;
 
-	task_new_thread(dummy);
+	LOG("Создание потока dummy\n");
 	task_new_thread(dummy);
 
 	test_buf = mem_alloc(8 * 8 * sizeof(uint32_t));

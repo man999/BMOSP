@@ -26,16 +26,18 @@ void lock_acquire(lock_t lock) {
 	for (;;) {
 		if (lock_swap(lock)) { break; }
 		count++;
-		if (count > 1000000) {
+		if (count > 10000) {
 			LOG("%s:%u блокировка зависла", lock.func, lock.line);
 			assert(0);
 		}
 
 		asm volatile("pause");
+
+		if (task_f_init) { task_switch( ); }
 	}
 }
 
 // Запрос разблокировки ресурса
 void lock_release(lock_t lock) {
-	lock.lock = 0;
+	if (lock.lock) { lock.lock = 0; }
 }
