@@ -17,14 +17,6 @@
 
 uint64_t full_init = 0;
 
-void finally( ) {
-	LOG("Готово! Для выхода из симуляции удерживайте: ESCAPE\n");
-	for (;;) {
-		task_switch( );
-		asm volatile("hlt");
-	}
-}
-
 // Точка входа
 void _start( ) {
 	asm volatile("cli");
@@ -34,8 +26,10 @@ void _start( ) {
 	fb_init( );
 	log_init_mem( );
 	arch_init( );
+	pit_init( );
+	task_init( );
+	task_f_init = 1;
 	mod_init( );
-	mod_after_init( );
 
 	LOG("\t\t\t\t *** Базовая Модульная Платформа Операционных Систем "
 	    "версии %u.%u.%u %s***\n",
@@ -44,16 +38,13 @@ void _start( ) {
 	LOG("\t\t\t\t *** Дата сборки: %s %s ***\n", __DATE__, __TIME__);
 
 	time_t time = rtc_get_time( );
-	LOG("Время: %2u:%2u.%2u, %2u.%2u.%2u\n", time.hours, time.minutes, time.second, time.day, time.month, time.year);
-
-	pit_init( );
-	task_init( );
-
-	task_new_thread(finally);
+	LOG("Время: %u:%u.%u, %u.%u.%u\n", time.hours, time.minutes, time.second, time.day, time.month, time.year);
 
 	full_init = 1;
-	task_f_init = 1;
 
+	task_after_init( );
+
+	LOG("Готово! Для выхода из симуляции удерживайте: ESCAPE\n");
 	asm volatile("sti");
 
 	for (;;) { asm volatile("hlt"); }

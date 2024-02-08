@@ -22,8 +22,8 @@ extern void (*free_framebuffer)(framebuffer_t *frame);
 extern void (*exit)(int code);
 extern int (*get_error)( );
 extern sys_info_t *(*get_info)( );
-extern uint64_t (*new_thread)(uint64_t func);
-extern int (*delete_thread)(uint64_t thread_id);
+extern uint64_t (*new_thread)(void (*func)(void *), char *name);
+extern void (*delete_thread)( );
 extern time_t (*get_time)( );
 extern uint64_t offset;
 

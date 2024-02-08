@@ -14,6 +14,15 @@
 #include <stdint.h>
 #include <tool.h>
 
+extern task_t *current_task;
+
+struct stack_frame {
+	struct stack_frame *rbp;
+	uint64_t rip;
+} __attribute__((packed));
+
+typedef struct stack_frame stack_frame_t;
+
 static inline void idt_load( ) {
 	asm volatile("lidt %0" : : "m"(idtr));
 }
@@ -52,7 +61,29 @@ static void exception_handler(struct frame state) {
 	    state.err, state.int_number);
 	LOG("\tCR3=%x\n", cr3);
 
-	asm volatile("cli; hlt");
+	mem_dump_memory( );
+
+	LOG("Поток вызвавший исключение: %u, [%s]\n", current_task->id, current_task->id_str);
+
+	task_t *t = current_task->next;
+
+	while (t && t != current_task) {
+		LOG("\tID: %u, [%s]\n", t->id, t->id_str);
+		t = t->next;
+	}
+
+	stack_frame_t *stk;
+	stk = (stack_frame_t *)state.rbp;
+
+	LOG("Трассировка стека:\n");
+
+	for (uint64_t i = 0; stk && i < 4; i++) {
+		LOG(" 0x%x\n", stk->rip);
+		stk = stk->rbp;
+	}
+
+	asm volatile("cli");
+	asm volatile("hlt");
 }
 
 void isr_generic(struct frame state) {

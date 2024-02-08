@@ -167,7 +167,7 @@ char *strchr(char *str, char c) {
 	return NULL;
 }
 
-int strcmp(const char *s1, const char *s2) {
+int strcmp(char *s1, char *s2) {
 	while (*s1 == *s2) {
 		if (*s1 == '\0') { return 0; }
 		s1++;
@@ -189,9 +189,7 @@ char *trstr(char *str, char sym) {
 	else
 		left = 0x00U;
 
-	char *res = alloc(size);
-	memcpy(res, str + left, size);
-	return res;
+	return str + left;
 }
 
 char *strdup(char *str) {
@@ -214,6 +212,24 @@ size_t count_chars(char *str, char c) {
 	return count;
 }
 
+uint64_t str_contains(char *str, char *substr) {
+	uint64_t str_len = strlen(str);
+	uint64_t substr_len = strlen(substr);
+
+	if (substr_len > str_len) { return 0; }
+
+	for (uint64_t i = 0; i <= str_len - substr_len; i++) {
+		uint64_t j;
+		for (j = 0; j < substr_len; j++) {
+			if (str[i + j] != substr[j]) { break; }
+		}
+
+		if (j == substr_len) { return 1; }
+	}
+
+	return 0;
+}
+
 void memcpy(void *dest, void *src, size_t n) {
 	char *d = (char *)dest;
 	char *s = (char *)src;
@@ -229,7 +245,7 @@ void *memset(void *ptr, uint8_t n, size_t size) {
 
 void *memmove(void *dest, void *src, size_t n) {
 	char *d = (char *)dest;
-	const char *s = (const char *)src;
+	char *s = (char *)src;
 
 	if (d > s) {
 		// копирование с конца массива, чтобы предотвратить перекрытие

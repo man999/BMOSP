@@ -36,19 +36,17 @@ def version_build():
 				if build > 999:
 					build = 0
 					minor += 1
-					file.write(f"#define VERSION_MINOR {minor}\n")
-				file.write(f"#define VERSION_BUILD {build}\n")
 			elif line.startswith("#define VERSION_MAJOR"):
 				parts = line.split()
 				major = int(parts[2])
-				file.write(line)
 			elif line.startswith("#define VERSION_MINOR"):
 				parts = line.split()
-				minor = int(parts[2])
-				file.write(line)
+				minor += int(parts[2]) 
 			else:
 				file.write(line)
-
+		file.write(f"#define VERSION_MAJOR {major}\n")
+		file.write(f"#define VERSION_MINOR {minor}\n")
+		file.write(f"#define VERSION_BUILD {build}\n")
 	return [major, minor, build]
 
 def sort_strings(strings):
@@ -101,42 +99,6 @@ def check_limine():
 	os.chdir("limine")
 	subprocess.run(["make"])
 	os.chdir("..")
-
-
-
-def check_os():
-	import platform
-	using_distro = False
-	try:
-		import distro
-		using_distro = True
-	except ImportError:
-		pass
-	if using_distro:
-		linux_distro = distro.like()
-	else:
-		try:
-			linux_distro = platform.linux_distribution()[0]
-		except Exception as E:
-			return 1
-	if linux_distro.lower() in ['debian', 'ubuntu', 'astra']:
-		return 1
-	return 0
-
-def check_tools():
-	required_tools = ["gcc", "g++", "xorriso", "make", "mtools", "curl"]
-	missing_tools = []
-
-	for tool in required_tools:
-		if shutil.which(tool) is None:
-			missing_tools.append(tool)
-
-	if len(missing_tools) > 0:
-		if check_os():
-			subprocess.run(["sudo", "apt", "install"] + missing_tools)
-			return
-		subprocess.run(["sudo", "pacman", "-S"] + missing_tools)
-
 
 def create_hdd(IMAGE_NAME):
 	os.system(f"rm -f {IMAGE_NAME}.hdd".format())
@@ -193,10 +155,6 @@ if __name__ == "__main__":
 		print("Установка Limine")
 		check_limine()
 
-	print("Проверка зависимостей")
-
-	check_tools()
-	
 	major, minor, build = version_build()
 	
 	print("Сборка модульного ядра")

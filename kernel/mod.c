@@ -33,7 +33,7 @@ static void *elf_entry(elf64_header_t *module_bin) {
 	// Приводим заголовок ELF файла к типу elf64_header_t
 	elf64_header_t *elf_header = (elf64_header_t *)module_bin;
 
-	// LOG("(uint64_t)elf_header->e_entry = 0x%x, type = %u\n", (uint64_t)elf_header->e_entry, elf_header->e_type);
+	LOG("(uint64_t)elf_header->e_entry = 0x%x, тип = %u\n", (uint64_t)elf_header->e_entry, elf_header->e_type);
 
 	if (elf_header->e_type != 2) {
 		LOG("\t\tОшибка! Модуль неправильно собран!\n");
@@ -62,8 +62,7 @@ void mod_after_init( ) {
 	for (uint64_t i = 0; i < modules_count; i++) {
 		if (module_list[i].after_init != 0) {
 			LOG("%s.after_init( );\n", module_list[i].name);
-			module_list[i].after_init( );
-			LOG("%s.after_init( );\n", module_list[i].name);
+			task_new_thread(module_list[i].after_init, module_list[i].name);
 		}
 	}
 }
@@ -75,7 +74,7 @@ module_info_t *mod_list_get(uint64_t *count) {
 
 module_info_t *mod_find(char *tag) {
 	for (uint64_t i = 0; i < modules_count; i++) {
-		if (tool_starts_with(module_list[i].name, tag)) { return &module_list[i]; }
+		if (tool_str_contains(module_list[i].name, tag)) { return &module_list[i]; }
 	}
 
 	return (module_info_t *)NULL;
@@ -93,6 +92,7 @@ void mod_init( ) {
 			LOG("Ошибка выделения памяти для массива module_list\n");
 			return;
 		}
+		LOG("module_list = 0x%x\n", module_list);
 	}
 
 	for (uint64_t i = 0; i < module_count; i++) {
@@ -128,7 +128,7 @@ void mod_init( ) {
 			continue;
 		}
 
-		module_info_t (*module_init)(env_t *env) =
+		module_info_t (*module_init)(env_t * env) =
 		    (module_info_t(*)(env_t * env)) elf_entry((elf64_header_t *)module_ptr->address);
 
 		// LOG("\t->Точка входа: 0x%x\n", module_init);
@@ -137,16 +137,23 @@ void mod_init( ) {
 
 		sys_install(&main_env);
 
-		module_info_t ret = module_init(&main_env);
+		uint64_t id = task_new_thread((void *)1, module_list[i].name);
 
+		module_info_t ret = module_init(&main_env);
 		LOG("\t->%s\n", ret.message);
+
+		task_del(id);
+
 		module_list[modules_count].name = ret.name;
 		module_list[modules_count].message = ret.message;
 		module_list[modules_count].data_size = ret.data_size;
+		module_list[modules_count].data = ret.data;
 		module_list[modules_count].get_func = ret.get_func;
 		module_list[modules_count].after_init = ret.after_init;
 
-		if (ret.data_size != 0) { module_list[modules_count].data = ret.data; }
+		if (module_list[modules_count].after_init) {
+			task_new_thread(module_list[modules_count].after_init, module_list[modules_count].name);
+		}
 
 		if (ret.irq != 0) {
 			if (ret.irq_handler != 0) {
